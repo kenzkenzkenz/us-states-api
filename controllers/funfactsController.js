@@ -33,7 +33,7 @@ const createFunfact = async (req, res) => {
         return res.status(400).json({ 'message': 'State fun facts value required' });
     }
     const myFunfacts = req.body.funfacts;
-    if (typeof myFunfacts != "object"){
+    if (Array.isArray(myFunfacts) == false){
         return res.status(400).json({ 'message': 'State fun facts value must be an array' });
     }
     const myStateCode = req.body.stateCode;
@@ -45,7 +45,7 @@ const createFunfact = async (req, res) => {
     if (stateExists) {
         factsArray = [...stateExists.funfacts, myFunfacts];
         const result = await stateExists.save();
-        return res.status(200).json({ 'message': 'funfact created' });
+        return res.status(200).json(result);
     }
 
     const result = await mongoFunFacts.create({
@@ -63,7 +63,8 @@ const updateFunfact = async (req, res) => {
     }
     let myIndex = req.body.index - 1;
 
-    if (typeof req.body.funfact != "string"){
+
+    if (typeof req.body.funfact[myIndex] != 'string'){
         return res.status(400).json({ 'message': 'State fun fact value required' });
     }
 

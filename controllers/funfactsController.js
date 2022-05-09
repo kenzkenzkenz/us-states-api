@@ -33,7 +33,7 @@ const createFunfact = async (req, res) => {
         return res.status(400).json({ 'message': 'State fun facts value required' });
     }
     const myFunfacts = req.body.funfacts;
-    if (Array.isArray(myFunfacts) == false){
+    if (!Array.isArray(myFunfacts)){
         return res.status(400).json({ 'message': 'State fun facts value must be an array' });
     }
     const myStateCode = req.body.stateCode;

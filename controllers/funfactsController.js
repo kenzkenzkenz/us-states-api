@@ -80,13 +80,12 @@ const updateFunfact = async (req, res) => {
     const stateExists = await mongoData.findOne({ stateCode: myStateCode }).exec();
 
     if (!stateExists) {
-        return res.status(400).json({ "message": `No Fun Facts found for ${myStateObj.state}.` }); //NOT WORKING
-        
+        return res.status(400).json({ 'message': `No Fun Facts found for ${myStateObj.state}` });
     }
     const factsArray = stateExists.funfacts;
 
     if (!factsArray[myIndex]) {
-        return res.status(400).json({  "message": `No Fun Fact found at that index for ${myStateObj.state}.` });//NO GOOD
+        return res.status(400).json({  "message": `No Fun Fact found at that index for ${myStateObj.state}` });
     }
     else {
         stateExists.stateCode = myStateCode;
@@ -117,12 +116,12 @@ const deleteFunfact = async (req, res) => {
     const state = await mongoData.findOne({ stateCode: myStateCode }).exec(); //look for match
 
     if (!state) { // if no state matches
-        return res.status(400).json({ "message": `No Fun Facts found for ${myStateObj.state}.` });
+        return res.status(400).json({ "message": `No Fun Facts found for ${myStateObj.state}` });
     }
 
     let factsArray = [...state.funfacts]; //create array of chosen state's facts only
     if (!factsArray[myIndex]) {
-        return res.status(400).json({  "message": `No Fun Fact found at that index for ${myStateObj.state}.` });
+        return res.status(400).json({  "message": `No Fun Fact found at that index for ${myStateObj.state}` });
     }
 
     factsArray = factsArray.filter(fact => fact !== factsArray[myIndex]); //filter out selected index

@@ -15,14 +15,16 @@ const getFunfact = async (req, res) => {
             myStateObj = state;
         }
     })
-    const stateExists = mongoData.find(st => st.stateCode === myStateCode);
+    const stateExists = await mongoData.findOne({ stateCode: myStateCode }).exec();
+
     if (stateExists) {
         factsArray = [...stateExists.funfacts];
         randomFunfact = factsArray[Math.floor(Math.random() * factsArray.length)];
         return res.status(200).json({ "funfact": ` ${randomFunfact}` });
     }
-
-    return res.status(200).json({ "message": `No Fun Facts found for ${myStateObj.state}`});
+    else{
+        return res.status(200).json({ "message": `No Fun Facts found for ${myStateObj.state}`});
+    }
 }
 
 // POST a fun fact
@@ -37,71 +39,90 @@ const createFunfact = async (req, res) => {
     }
     const myStateCode = req.params.state.toUpperCase();
 
-
     //dealing with mongo
-    const stateExists = await mongoData.find({ stateCode: myStateCode }).exec();
+    const stateExists = await mongoData.findOne({ stateCode: myStateCode }).exec();
 
     if (!stateExists){
-        const newState = await mongoData.create({
+        const stateExists = await mongoData.create({
             stateCode: myStateCode,
             funfacts: myFunfacts
         });
-        return res.json(newState);
+        result = await stateExists.save()
 
     } else {
-        stateExists.funfacts = [stateExists.funfacts, ...myFunfacts];
-        return res.json(stateExists.funfacts);
+        stateExists.funfacts = [...stateExists.funfacts, ...myFunfacts];
+        result = await stateExists.save()
     }
+    res.status(201).json(result);
 }
 
 // PATCH a fun fact
 const updateFunfact = async (req, res) => {
     //deal with inputs
-    if (!req?.body?.index || !req?.body?.funfact) {
+    if (!req?.body?.index) {
         return res.status(400).json({ 'message': 'State fun fact index value required' });
     }
     let myIndex = req.body.index - 1;
 
-    if (typeof req.body.funfact[myIndex] != 'string'){
+    if (typeof req.body.funfact != 'string'){
         return res.status(400).json({ 'message': 'State fun fact value required' });
     }
+    const myStateCode = req.params.state.toUpperCase();
+
+    const statesArray = [...jsonStateData];
+    statesArray.forEach(state => {
+        if (state.code === myStateCode) {
+            myStateObj = state;
+        }
+    })
 
     //deal with mongo
-    const state = await mongoData.find(st => st.stateCode === req.params.stateCode);
-    if (!state) {
-        return res.status(204).json({ "message": `No Fun Facts found for ${state}.` });
+    const stateExists = await mongoData.findOne({ stateCode: myStateCode }).exec();
+
+    if (!stateExists) {
+        return res.status(400).json({ "message": `No Fun Facts found for ${myStateObj.state}.` }); //NOT WORKING
+        
+    }
+    const factsArray = stateExists.funfacts;
+
+    if (!factsArray[myIndex]) {
+        return res.status(400).json({  "message": `No Fun Fact found at that index for ${myStateObj.state}.` });//NO GOOD
+    }
+    else {
+        stateExists.stateCode = myStateCode;
+        stateExists.funfacts[myIndex] = req.body.funfact;
+        result = await stateExists.save();
     }
 
-    const myStateFactsArray = state.map(st => st.funfacts);
-    if (!myStateFactsArray[req.body.index]) {
-        return res.status(204).json({  "message": `No Fun Fact found at that index for ${state}.` });
-    }
-    if (req.params.stateCode) {
-        state.stateCode = req.params.stateCode;
-    }
-    if (req.body.index) {
-        state.funfacts[myIndex] = req.body.funfact;
-    }
-
-    const result = await state.save();
     res.json(result);
 }
 
 // DELETE a fun fact
 const deleteFunfact = async (req, res) => {
+    // deal with inputs
     if (!req?.body?.index) { //if missing inputs
         return res.status(400).json({ 'message': `State fun fact index value required` });
     }
+    const myStateCode = req.params.state.toUpperCase();
     let myIndex = req.body.index - 1; //assign index
-    const state = await mongoData.findOne({ stateCode: req.params.stateCode }).exec(); //look for match
+
+    const statesArray = [...jsonStateData];
+    statesArray.forEach(state => {
+        if (state.code === myStateCode) {
+            myStateObj = state;
+        }
+    })
+
+    // deal with mongo
+    const state = await mongoData.findOne({ stateCode: myStateCode }).exec(); //look for match
 
     if (!state) { // if no state matches
-        return res.status(204).json({ "message": `No Fun Facts found for ${req.params.stateCode}.` });
+        return res.status(400).json({ "message": `No Fun Facts found for ${myStateObj.state}.` });
     }
 
     let factsArray = [...state.funfacts]; //create array of chosen state's facts only
     if (!factsArray[myIndex]) {
-        return res.status(204).json({  "message": `No Fun Fact found at that index for ${state}.` });
+        return res.status(400).json({  "message": `No Fun Fact found at that index for ${myStateObj.state}.` });
     }
 
     factsArray = factsArray.filter(fact => fact !== factsArray[myIndex]); //filter out selected index
